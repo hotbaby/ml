@@ -29,11 +29,11 @@ class DecisionTree(object):
     def __init__(self, classes, features, max_depth=10,
                  min_samples_split=10, impurity_t='entropy'):
         """
-        :param classes: 表示模型分类总共有几类
-        :param features: 每个特征的名字，也方便查询总的共特征数
-        :param max_depth: 构建决策树时的最大深度
-        :param min_samples_split: 构建决策树分裂节点时，如果到达该节点的样本数小于该值则不再分裂
-        :param impurity_t: 计算混杂度（不纯度）的计算方式，例如entropy或gini
+        :param classes: label classes
+        :param features: feature names
+        :param max_depth: max depth of decision tree
+        :param min_samples_split: min samples of split
+        :param impurity_t: impurity.
         """
         self.classes = classes
         self.features = features
@@ -155,26 +155,21 @@ class DecisionTree(object):
             else:
                 root = root.right
 
-    def fit(self, xs, y):
+    def fit(self, xs, ys):
         """
-        训练模型
-        xs为二维numpy（n*m）数组，每行表示一个样本，有m个特征
-        label为一维numpy（n）数组，表示每个样本的分类标签
-
-        提示：一种可能的实现方式为
-        self.root = self.build_tree(xs, y, depth=1) # 从根节点开始分裂，模型记录根节点
+        Train decision tree.
+        :param xs: train features
+        :pram ys: train labels
+        :return None
         """
         assert len(self.features) == len(xs[0])
-        self.root = self.build_tree(xs, y)
+        self.root = self.build_tree(xs, ys)
 
     def predict(self, xs):
         """
-        预测
-        输入feature可以是一个一维numpy数组也可以是一个二维numpy数组
-        如果是一维numpy（m）数组则是一个样本，包含m个特征，返回一个类别值
-        如果是二维numpy（n*m）数组则表示n个样本，每个样本包含m个特征，返回一个numpy一维数组
-
-        提示：一种可能的实现方式为
+        Predict.
+        :param xs: predict features
+        :return predict labels
         """
         assert len(xs.shape) in (1, 2)
 
