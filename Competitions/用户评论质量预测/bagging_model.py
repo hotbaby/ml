@@ -9,11 +9,10 @@ from sklearn.metrics import roc_auc_score
 class MyBaggingClassifier(object):
     """Bagging classifier."""
 
-    def __init__(self, base_estimator, n_estimators=1000, random_state=42, max_samples=1.0, n_jobs=12):
+    def __init__(self, base_estimator, n_estimators=100, max_samples=1.0):
         self.base_estimator = base_estimator
         self.n_estimators = n_estimators
-        self.random_state = random_state
-        self.max_samples = 1.0
+        self.max_samples = max_samples
         self.estimators = []
 
     def fit(self, X, y, val_set=None):
@@ -22,12 +21,13 @@ class MyBaggingClassifier(object):
 
         for _ in range(self.n_estimators):
             estimator = copy.deepcopy(self.base_estimator)
-            rng = np.random.RandomState(self.random_state)
-            samples = []
+            seed = np.random.randint(1, 100)
+            rng = np.random.RandomState(seed)
 
             tm = time.time()
-            for i in range(n_samples):
-                samples.append(rng.choice(n_samples))
+            samples = rng.randint(0, n_samples, n_samples)
+            # for i in range(n_samples):
+            #     samples.append(rng.choice(n_samples))
 
             X_samples = X[samples]
             y_samples = y[samples]
@@ -38,7 +38,7 @@ class MyBaggingClassifier(object):
             if val_set:
                 X_val, y_val = val_set
                 auc_score = roc_auc_score(y_val, self.predict_proba(X_val)[:, 1])
-                msg = 'fit %s estimators, auc: %.6f, elapse %.2f seconds, ' % (len(self.estimators),
+                msg = 'fit %s estimators, auc: %.8f, elapse %.2f seconds, ' % (len(self.estimators),
                                                                                auc_score,
                                                                                time.time() - tm)
             else:
