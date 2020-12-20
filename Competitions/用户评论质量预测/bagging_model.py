@@ -35,14 +35,15 @@ class MyBaggingClassifier(object):
 
             self.estimators.append(estimator)
 
+            train_auc = roc_auc_score(y, self.predict_proba(X)[:, 1])
             if val_set:
                 X_val, y_val = val_set
                 auc_score = roc_auc_score(y_val, self.predict_proba(X_val)[:, 1])
-                msg = 'fit %s estimators, auc: %.8f, elapse %.2f seconds, ' % (len(self.estimators),
-                                                                               auc_score,
-                                                                               time.time() - tm)
+                msg = 'fit %s estimators, train auc: %.6f, val auc: %.8f, elapse %.2f seconds, ' % \
+                      (len(self.estimators), train_auc, auc_score, time.time() - tm)
             else:
-                msg = 'fit %s estimators, elapse %.2f seconds ' % (len(self.estimators), time.time() - tm)
+                msg = 'fit %s estimators, train auc: %.6f, elapse %.2f seconds ' % \
+                      (len(self.estimators), train_auc, time.time() - tm)
             print(msg)
 
     def predict_proba(self, X):
