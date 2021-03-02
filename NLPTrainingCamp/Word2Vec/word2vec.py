@@ -9,8 +9,9 @@ import multiprocessing
 from gensim.models import KeyedVectors
 from sklearn.metrics.pairwise import cosine_similarity
 
-BASEDIR = os.path.dirname(os.path.basename(__file__))
-wordsim353_data_path = os.path.join(BASEDIR, 'wordsim353/combined.csv') # noqa
+# BASEDIR = os.path.dirname(os.path.basename(__file__))
+BASEDIR = '~/Datasets'
+wordsim353_data_path = os.path.join(BASEDIR, 'wordsim353.csv') # noqa
 
 
 class Sentence(object):
@@ -96,7 +97,7 @@ def evaluate_similarity(wv):
 
 
 if __name__ == '__main__':
-    corpus_data_path = 'text8'
+    corpus_data_path = os.path.join(BASEDIR, 'text8')
     print('start train word2vec, corpus: %s' % corpus_data_path)
     tm = time.time()
     wv = word2vec(corpus_data_path)
