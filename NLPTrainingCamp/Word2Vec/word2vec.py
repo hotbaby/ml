@@ -10,7 +10,7 @@ from gensim.models import KeyedVectors
 from sklearn.metrics.pairwise import cosine_similarity
 
 # BASEDIR = os.path.dirname(os.path.basename(__file__))
-BASEDIR = '~/Datasets'
+BASEDIR = os.path.expanduser('~/Datasets')
 wordsim353_data_path = os.path.join(BASEDIR, 'wordsim353.csv') # noqa
 
 
