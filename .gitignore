@@ -135,3 +135,5 @@ data
 catboost_info
 runs
 .jovianrc
+nohup.out
+model_storage
