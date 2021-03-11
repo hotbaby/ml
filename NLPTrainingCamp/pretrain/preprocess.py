@@ -1,7 +1,10 @@
-from transformers import BertTokenizer
-from tqdm import tqdm
+# encoding: utf8
+
+import os
 import json
 import copy
+from tqdm import tqdm
+from transformers import BertTokenizer
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased',
                                           do_lower_case=True)
@@ -10,7 +13,7 @@ fact_in_train = set()
 span_wrong_dict = set()
 
 
-def convert_feature(file_name, output_file, max_seq_length=512, is_training=True, is_test=False):
+def convert_feature(file_name, output_file, max_seq_length=512, is_training=True, is_test=False, debug=False):
     i_line = 0
     max_len_for_doc = max_seq_length - 2  # [CLS] [SEP]
 
@@ -22,15 +25,16 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
         with open(file_name, 'r') as f:
             data_samples = json.load(f)
             for sample in tqdm(data_samples):
-
                 if not is_test:
+                    # 训练集、开发集
                     labels = sample['labels']
+
                 # 外面先wordpiece分词,映射每句的word index
                 sents = []
                 sent_map = []
                 for sent in sample['sents']:
                     new_sent = []
-                    new_map = {}
+                    new_map = {}    # 索引为句子token index
                     for i_t, token in enumerate(sent):
                         tokens_wordpiece = tokenizer.tokenize(token)
                         new_map[i_t] = len(new_sent)
@@ -44,12 +48,17 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                 # 先存储有relation的实体关系
                 train_triple = {}
                 if not is_test:
+                    # 训练集、开发集
+
                     for label in labels:
                         evidence = label['evidence']
                         r = int(rel2id[label['r']])
+
                         # 由于同一组实体可能存在多个关系，这里要用list存！
                         if (label['h'], label['t']) not in train_triple:
+                            # 添加关系三元组
                             train_triple[(label['h'], label['t'])] = [{'relation': r, 'evidence': evidence}]
+
                         else:  # 不过要确保他们的关系是不同的
                             in_triple = False
                             for tmp_r in train_triple[(label['h'], label['t'])]:
@@ -61,16 +70,18 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
 
                         intrain = False
                         # 登记哪些实体关系在train中出现过了
-                        for e1i in entitys[label['h']]:
-                            for e2i in entitys[label['t']]:
+                        for e1i in entitys[label['h']]:         # 头实体
+                            for e2i in entitys[label['t']]:     # 尾实体
                                 if is_training:
+                                    # 训练集
                                     fact_in_train.add((e1i['name'], e2i['name'], r))
                                 elif not is_test:
-                                    # 验证集查找
+                                    # 验证集
                                     if (e1i['name'], e2i['name'], r) in fact_in_train:
                                         for train_tmp in train_triple[(label['h'], label['t'])]:
                                             train_tmp['intrain'] = True
                                         intrain = True
+
                         if not intrain:
                             for train_tmp in train_triple[(label['h'], label['t'])]:
                                 train_tmp['intrain'] = False
@@ -109,6 +120,7 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                             relation_label = None
                             evidence = []
                             if not is_test:
+                                # 训练集、验证集
                                 if (e1, e2) not in train_triple:
                                     relation_label = [0] * len(rel2id)
                                     relation_label[0] = 1
@@ -134,7 +146,7 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                             assert len(input_mask) == max_seq_length
                             assert len(segment_ids) == max_seq_length
 
-                            if i_line <= 5:
+                            if debug and i_line == 1:
                                 print('#' * 100)
                                 print('E1:', [e['name'] for e in entity1])
                                 print('E2:', [e['name'] for e in entity2])
