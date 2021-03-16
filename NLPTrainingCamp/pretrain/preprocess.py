@@ -3,6 +3,7 @@
 import os
 import json
 import copy
+import itertools
 from tqdm import tqdm
 from transformers import BertTokenizer
 
@@ -66,7 +67,8 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                                     in_triple = True
                                     break
                             if not in_triple:
-                                train_triple[(label['h'], label['t'])].append({'relation': r, 'evidence': evidence})
+                                train_triple[(label['h'], label['t'])].append({'relation': r,
+                                                                               'evidence': evidence})
 
                         intrain = False
                         # 登记哪些实体关系在train中出现过了
@@ -90,7 +92,8 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                 for e1, entity1 in enumerate(entitys):
                     for e2, entity2 in enumerate(entitys):
                         if e1 != e2:
-                            # 在所有实体1前后加上[unused0]和[unused1]用来给实体定位,在所有实体2前后加上[unused2]和[unused3]用来给实体定位
+                            # 在所有实体1前后加上[unused0]和[unused1]用来给实体定位,在所有实体2前后加上[unused2]和[unused3]
+                            # 用来给实体定位.
                             # [unused0] Hirabai Badodekar [unused1] , Gangubai Hangal , Mogubai Kurdikar ) ,
                             # made the [unused2] Indian [unused3] classical music so much greater .
 
@@ -102,11 +105,42 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                                 e['first'] = False  # 是entity2
                             new_sents = copy.deepcopy(sents)
 
-                            # TODO 添加在 new_sents 里面加入 [unused0] [unused1] [unused2] [unused3] 的代码
+                            if True:
+                                # 添加在 new_sents 里面加入 [unused0] [unused1] [unused2] [unused3] 的代码
+                                for entity in itertools.chain(*[entity1_, entity2_]):
+                                    pos = entity['pos']
+                                    sent_id = entity['sent_id']
+                                    start_token_pos = sent_map[sent_id][pos[0]]
+                                    try:
+                                        end_token_pos = sent_map[sent_id][pos[1]] - 1
+                                    except IndexError:
+                                        end_token_pos = len(sent_map[sent_id]) - 1
 
-                            doc_tokens = []
-                            for sent in new_sents:
-                                doc_tokens.extend(sent)
+                                    st = new_sents[sent_id][start_token_pos]    # start token
+                                    et = new_sents[sent_id][end_token_pos]      # end token
+
+                                    if entity['first'] is True:
+                                        st = ['[unused0]'] + st if isinstance(st, list) else ['[unused0]', st]
+                                        new_sents[sent_id][start_token_pos] = st
+
+                                        et = et + ['[unused1]'] if isinstance(et, list) else [et, '[unused1]']
+                                        new_sents[sent_id][end_token_pos] = et
+
+                                    else:
+                                        st = ['[unused2]'] + st if isinstance(st, list) else ['[unused2]', st]
+                                        new_sents[sent_id][start_token_pos] = st
+
+                                        et = et + ['[unused3]'] if isinstance(et, list) else [et, '[unused3]']
+                                        new_sents[sent_id][end_token_pos] = et
+
+                                doc_tokens = []
+                                for sent in new_sents:
+                                    doc_tokens.extend(
+                                        itertools.chain(*map(lambda x: x if isinstance(x, list) else [x], sent)))
+                            else:
+                                doc_tokens = []
+                                for sent in new_sents:
+                                    doc_tokens.extend(sent)
 
                             if len(doc_tokens) > max_len_for_doc:
                                 continue
@@ -146,7 +180,7 @@ def convert_feature(file_name, output_file, max_seq_length=512, is_training=True
                             assert len(input_mask) == max_seq_length
                             assert len(segment_ids) == max_seq_length
 
-                            if debug and i_line == 1:
+                            if debug and i_line == 0:
                                 print('#' * 100)
                                 print('E1:', [e['name'] for e in entity1])
                                 print('E2:', [e['name'] for e in entity2])
